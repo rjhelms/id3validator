@@ -3,6 +3,7 @@
 
 from enum import Enum
 from typing import List, Tuple
+from dataclasses import dataclass
 
 from mutagen.easyid3 import EasyID3
 
@@ -43,33 +44,26 @@ ALL_CATEGORIES = (
 )
 
 
+@dataclass
 class TrackType:
-    """Class to hold data for a track type, including validation rules"""
+    """Class to hold data for a track type, including validation rules
 
-    def __init__(
-        self,
-        name: str,
-        valid_categories: Tuple[int] = ALL_CATEGORIES,
-        artist_mandatory: bool = False,
-        album_mandatory: bool = False,
-    ) -> None:
-        """
-        Parameters
-        ----------
-        name:
-            Name of the track type
-        valid_categories: optional
-            Valid CRTC content categories for the track type, defaults to all valid CRTC categories.
-        artist_mandatory: optional
-            Whether the artist field is mandatory for this track type, defaults to False
-        album_mandatory: optional
-            Whether the album field is mandatory for this track type, defaults to False
-        """
-        self.name = name
-        self.valid_categories = valid_categories
+    Attributes
+    ----------
+    name:
+        Name of the track type
+    valid_categories: optional
+        Valid CRTC content categories for the track type, defaults to all valid CRTC categories.
+    artist_mandatory: optional
+        Whether the artist field is mandatory for this track type, defaults to False
+    album_mandatory: optional
+        Whether the album field is mandatory for this track type, defaults to False
+    """
 
-        self.artist_mandatory = artist_mandatory
-        self.album_mandatory = album_mandatory
+    name: str
+    valid_categories: Tuple[int] = ALL_CATEGORIES
+    artist_mandatory: bool = False
+    album_mandatory: bool = False
 
 
 DEFAULT_TYPE = TrackType("Default")
