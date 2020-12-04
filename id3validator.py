@@ -76,6 +76,8 @@ class Track:
         self.filename = filename
         self.type = tracktype
 
+        # TODO: handle file path properly!
+
         file = open(filename, "rb")
         self.metadata = EasyID3(file)
 
