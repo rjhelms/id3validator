@@ -98,7 +98,7 @@ class Track:
             self.metadata = EasyID3(file_obj)
 
     def validate(self) -> bool:
-        """Validates the metadate for the audio track.
+        """Validates the metadata for the audio track.
 
         Any errors and warnings generated validation can be retrieved from their respective
         properties.
