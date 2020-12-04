@@ -126,12 +126,8 @@ class Track:
             self.__warnings.append(ValidationMessages.MISSING_YEAR)
 
         if "genre" in self.metadata:
-            genres = []
-            for i in self.metadata["genre"]:
-                j = i.split(", ")
-                genres.extend(j)
-            print(genres)
             # TODO: implement full genre validation
+            pass
         else:
             self.__errors.append(ValidationMessages.MISSING_CATEGORY)
             valid_check = False
@@ -172,12 +168,12 @@ class Track:
 
 
 if __name__ == "__main__":
-    while True:
-        input_file = input("File?")
-        input_file = input_file.strip("\"'")
 
-        track = Track(input_file)
+    input_file = input("File?")
+    input_file = input_file.strip("\"'")
 
-        print("Errors: ", track.errors)
-        print("Warnings: ", track.warnings)
-        print("Valid: ", track.valid)
+    track = Track(input_file)
+
+    print("Errors: ", track.errors)
+    print("Warnings: ", track.warnings)
+    print("Valid: ", track.valid)
