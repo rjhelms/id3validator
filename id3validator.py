@@ -269,7 +269,7 @@ class MainWindow(wx.Frame):
 
     def __init__(self, parent, title):
         self.track_list = []
-        wx.Frame.__init__(self, parent, title=title)
+        wx.Frame.__init__(self, parent, title=title, size=(640, 480))
         sizer = wx.BoxSizer(wx.VERTICAL)
         self.list = ObjectListView.ObjectListView(self, style=wx.LC_REPORT)
         self.list.SetColumns(
@@ -283,8 +283,11 @@ class MainWindow(wx.Frame):
             ]
         )
         self.list.SetObjects(self.track_list)
-        self.text_box = wx.TextCtrl(self, style=wx.TE_MULTILINE | wx.TE_READONLY)
-        sizer.Add(self.list, 2, wx.EXPAND, 0)
+        self.text_box = wx.TextCtrl(
+            self, style=wx.TE_MULTILINE | wx.TE_READONLY, size=(-1, 150)
+        )
+        self.text_box.SetMinSize(wx.Size(-1, 150))
+        sizer.Add(self.list, 3, wx.EXPAND, 0)
         sizer.Add(self.text_box, 1, wx.EXPAND, 0)
         self.SetSizer(sizer)
         file_drop_target = ValidationDropper(self)
