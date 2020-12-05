@@ -25,6 +25,8 @@ class ValidationMessages(Enum):
     CATEGORY_WRONG_POSITION = "Category in wrong position"
 
 
+DELAY = 100
+
 ALL_CATEGORIES = (
     11,
     12,
@@ -159,7 +161,7 @@ class Track:
         self.__validated = False
         self.__errors = []
         self.__warnings = []
-        
+
         with open(self.filename, "rb") as file_obj:
             try:
                 self.metadata = EasyID3(file_obj)
@@ -311,6 +313,7 @@ class MainWindow(wx.Frame):
     def __init__(self, parent, title):
         wx.Frame.__init__(self, parent, title=title, size=(640, 480))
         sizer = wx.BoxSizer(wx.VERTICAL)
+
         self.list = ObjectListView.ObjectListView(self, style=wx.LC_REPORT)
         self.list.SetColumns(
             [
@@ -326,16 +329,38 @@ class MainWindow(wx.Frame):
                 ObjectListView.ColumnDefn("Filename", "left", -1, "filename"),
             ]
         )
+
         self.text_box = wx.TextCtrl(
             self, style=wx.TE_MULTILINE | wx.TE_READONLY, size=(-1, 150)
         )
         self.text_box.SetMinSize(wx.Size(-1, 150))
+
         sizer.Add(self.list, 3, wx.EXPAND, 0)
         sizer.Add(self.text_box, 1, wx.EXPAND, 0)
         self.SetSizer(sizer)
+
         file_drop_target = ValidationDropper(self)
         self.SetDropTarget(file_drop_target)
+
+        self.timer = wx.Timer(self)
+
+        self.Bind(wx.EVT_TIMER, self.on_timer_up, id=wx.ID_ANY)
+        self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.on_item_selected, id=wx.ID_ANY)
+        self.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.on_item_selected, id=wx.ID_ANY)
         self.Show()
+
+    def on_item_selected(self, event):
+        """Process change in selection events.
+
+        Starts a one-shot timer to batch updates."""
+        self.timer.StartOnce(DELAY)
+
+    def on_timer_up(self, event):
+        """Process change in selection events, after end of one-shot timer."""
+        self.text_box.SetValue("")
+        for item in self.list.GetSelectedObjects():
+            self.text_box.write(item.summary())
+            self.text_box.write("\n")
 
 
 class ValidationDropper(wx.FileDropTarget):
