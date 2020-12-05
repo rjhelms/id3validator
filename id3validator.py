@@ -7,6 +7,7 @@ from typing import List, Tuple
 
 import mutagen
 import wx
+import ObjectListView
 from mutagen.easyid3 import EasyID3
 
 
@@ -196,6 +197,20 @@ class Track:
         return self.__valid
 
     @property
+    def error_count(self) -> int:
+        """Returns count of validation errors. If validation has not yet been performed, runs
+        validate() before returning. Read-only."""
+        return len(self.errors)
+
+    @property
+    def warning_count(self) -> int:
+        """
+        Returns count of validation warnings. If validation has not yet been performed, runs
+        validate() before returning. Read-only.
+        """
+        return len(self.warnings)
+
+    @property
     def errors(self) -> List[str]:
         """
         Returns the list of validation errors. If validation has not yet been performed, runs
@@ -230,8 +245,25 @@ class MainWindow(wx.Frame):
     """Main window for application."""
 
     def __init__(self, parent, title):
+        self.track_list = []
         wx.Frame.__init__(self, parent, title=title)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        self.list = ObjectListView.ObjectListView(self, style=wx.LC_REPORT)
+        self.list.SetColumns(
+            [
+                ObjectListView.ColumnDefn(
+                    "Valid", "left", 24, "valid", checkStateGetter="valid"
+                ),
+                ObjectListView.ColumnDefn("E", "left", 24, "error_count"),
+                ObjectListView.ColumnDefn("W", "left", 24, "warning_count"),
+                ObjectListView.ColumnDefn("Filename", "left", -1, "filename"),
+            ]
+        )
+        self.list.SetObjects(self.track_list)
         self.text_box = wx.TextCtrl(self, style=wx.TE_MULTILINE | wx.TE_READONLY)
+        sizer.Add(self.list, 2, wx.EXPAND, 0)
+        sizer.Add(self.text_box, 1, wx.EXPAND, 0)
+        self.SetSizer(sizer)
         file_drop_target = ValidationDropper(self)
         self.SetDropTarget(file_drop_target)
         self.Show()
@@ -263,6 +295,7 @@ class ValidationDropper(wx.FileDropTarget):
                 self.window.text_box.write("Warnings:\n")
                 for warning in track.warnings:
                     self.window.text_box.write(f"    - {warning}\n")
+            self.window.list.AddObject(track)
 
         self.window.text_box.write("\n")
         return True
