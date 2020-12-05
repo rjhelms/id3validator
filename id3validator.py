@@ -196,6 +196,29 @@ class Track:
         self.__validated = True
         return self.__valid
 
+    def summary(self) -> str:
+        """
+        Returns a string representation of the validation results, for logging or UI display.
+        """
+        summary = ""
+        summary += f"{self.filename}: "
+        if self.valid:
+            summary += "Valid\n"
+        else:
+            summary += "Invalid\n"
+
+        if self.errors:
+            summary += "Errors:\n"
+            for error in self.errors:
+                summary += f"    - {error}\n"
+
+        if self.warnings:
+            summary += "Warnings:\n"
+            for warning in self.warnings:
+                summary += f"    - {warning}\n"
+
+        return summary
+
     @property
     def error_count(self) -> int:
         """Returns count of validation errors. If validation has not yet been performed, runs
@@ -278,26 +301,12 @@ class ValidationDropper(wx.FileDropTarget):
 
     def OnDropFiles(self, x, y, filenames):
         """Receives dropped files, and runs validation on them."""
+        self.window.text_box.SetValue("")
         for i in filenames:
             track = Track(i)
-            self.window.text_box.write(f"{track.filename}: ")
-            if track.valid:
-                self.window.text_box.write("Valid\n")
-            else:
-                self.window.text_box.write("Invalid\n")
-
-            if track.errors:
-                self.window.text_box.write("Errors:\n")
-                for error in track.errors:
-                    self.window.text_box.write(f"    - {error}\n")
-
-            if track.warnings:
-                self.window.text_box.write("Warnings:\n")
-                for warning in track.warnings:
-                    self.window.text_box.write(f"    - {warning}\n")
+            self.window.text_box.write(track.summary())
+            self.window.text_box.write("\n")
             self.window.list.AddObject(track)
-
-        self.window.text_box.write("\n")
         return True
 
 
