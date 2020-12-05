@@ -93,18 +93,16 @@ class Track:
         """
         self.filename = filename
         self.type = tracktype
-        self.__errors = []
-        self.__warnings = []
         self.__valid = False
         self.__validated = False
+        self.__errors = []
+        self.__warnings = []
+        self.refresh()
 
-        with open(filename, "rb") as file_obj:
-            try:
-                self.metadata = EasyID3(file_obj)
-            except mutagen.id3._util.ID3NoHeaderError:
-                self.__errors.append(ValidationMessages.NO_METADATA.value)
-                self.__valid = False
-                self.__validated = True
+    def __eq__(self, other):
+        if isinstance(other, Track):
+            return self.filename == other.filename
+        return False
 
     def __validate_genre(self) -> bool:
         genre_valid = True
@@ -154,6 +152,21 @@ class Track:
             genre_valid = False
 
         return genre_valid
+
+    def refresh(self) -> None:
+        """Clears any existing validation, and reloads metadat from file."""
+        self.__valid = False
+        self.__validated = False
+        self.__errors = []
+        self.__warnings = []
+        
+        with open(self.filename, "rb") as file_obj:
+            try:
+                self.metadata = EasyID3(file_obj)
+            except mutagen.id3.ID3NoHeaderError:
+                self.__errors.append(ValidationMessages.NO_METADATA.value)
+                self.__valid = False
+                self.__validated = True
 
     def validate(self) -> bool:
         """Validates the metadata for the audio track.
@@ -296,7 +309,6 @@ class MainWindow(wx.Frame):
     """Main window for application."""
 
     def __init__(self, parent, title):
-        self.track_list = []
         wx.Frame.__init__(self, parent, title=title, size=(640, 480))
         sizer = wx.BoxSizer(wx.VERTICAL)
         self.list = ObjectListView.ObjectListView(self, style=wx.LC_REPORT)
@@ -314,7 +326,6 @@ class MainWindow(wx.Frame):
                 ObjectListView.ColumnDefn("Filename", "left", -1, "filename"),
             ]
         )
-        self.list.SetObjects(self.track_list)
         self.text_box = wx.TextCtrl(
             self, style=wx.TE_MULTILINE | wx.TE_READONLY, size=(-1, 150)
         )
@@ -338,10 +349,22 @@ class ValidationDropper(wx.FileDropTarget):
         """Receives dropped files, and runs validation on them."""
         self.window.text_box.SetValue("")
         for i in filenames:
+            # create track object
             track = Track(i)
+
+            # check if track already exists in list
+            indices = [
+                i for i, s in enumerate(self.window.list.GetObjects()) if track == s
+            ]
+            if len(indices) > 0:  # if it does, reload metadata
+                existing_track = self.window.list.GetObjectAt(indices[0])
+                existing_track.refresh()
+                self.window.list.RefreshObject(existing_track)
+            else:  # if not, append to list
+                self.window.list.AddObject(track)
+
             self.window.text_box.write(track.summary())
             self.window.text_box.write("\n")
-            self.window.list.AddObject(track)
         return True
 
 
