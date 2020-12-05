@@ -220,6 +220,34 @@ class Track:
         return summary
 
     @property
+    def title(self) -> str:
+        """String representation of the title tag, if present. Read-only"""
+        if "title" in self.metadata:
+            return self.metadata["title"][0]
+        return ""
+
+    @property
+    def artist(self) -> str:
+        """String representation of the artist tag, if present. Read-only"""
+        if "artist" in self.metadata:
+            return self.metadata["artist"][0]
+        return ""
+
+    @property
+    def album(self) -> str:
+        """String representation of the album tag, if present. Read-only"""
+        if "album" in self.metadata:
+            return self.metadata["album"][0]
+        return ""
+
+    @property
+    def date(self) -> str:
+        """String representation of the date tag, if present. Read-only"""
+        if "date" in self.metadata:
+            return self.metadata["date"][0]
+        return ""
+
+    @property
     def error_count(self) -> int:
         """Returns count of validation errors. If validation has not yet been performed, runs
         validate() before returning. Read-only."""
@@ -279,6 +307,10 @@ class MainWindow(wx.Frame):
                 ),
                 ObjectListView.ColumnDefn("E", "left", 24, "error_count"),
                 ObjectListView.ColumnDefn("W", "left", 24, "warning_count"),
+                ObjectListView.ColumnDefn("Title", "left", -1, "title"),
+                ObjectListView.ColumnDefn("Artist", "left", -1, "artist"),
+                ObjectListView.ColumnDefn("Album", "left", -1, "album"),
+                ObjectListView.ColumnDefn("Date", "left", -1, "date"),
                 ObjectListView.ColumnDefn("Filename", "left", -1, "filename"),
             ]
         )
