@@ -1,3 +1,4 @@
 black~=20.8b1
 mutagen~=1.45.1
 pylint~=2.6.0
+wxPython==4.1.1

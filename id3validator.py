@@ -1,16 +1,19 @@
 """Audio file metadata validator for Trent Radio's Libretime implementation."""
 
 
+from dataclasses import dataclass
 from enum import Enum
 from typing import List, Tuple
-from dataclasses import dataclass
 
+import mutagen
+import wx
 from mutagen.easyid3 import EasyID3
 
 
 class ValidationMessages(Enum):
     """Enumerator to hold validation messages."""
 
+    NO_METADATA = "No metadata found"
     MISSING_TITLE = "Missing title"
     MISSING_ARTIST = "Missing artist"
     MISSING_ALBUM = "Missing album"
@@ -95,7 +98,12 @@ class Track:
         self.__validated = False
 
         with open(filename, "rb") as file_obj:
-            self.metadata = EasyID3(file_obj)
+            try:
+                self.metadata = EasyID3(file_obj)
+            except mutagen.id3._util.ID3NoHeaderError:
+                self.__errors.append(ValidationMessages.NO_METADATA.value)
+                self.__valid = False
+                self.__validated = True
 
     def __validate_genre(self) -> bool:
         genre_valid = True
@@ -122,7 +130,7 @@ class Track:
 
             if contains_category:
                 # verify cat is in first position
-                if category_index is not 0:
+                if category_index != 0:
                     self.__warnings.append(
                         ValidationMessages.CATEGORY_WRONG_POSITION.value
                     )
@@ -218,14 +226,49 @@ class Track:
         return self.__valid
 
 
+class MainWindow(wx.Frame):
+    """Main window for application."""
+
+    def __init__(self, parent, title):
+        wx.Frame.__init__(self, parent, title=title)
+        self.text_box = wx.TextCtrl(self, style=wx.TE_MULTILINE | wx.TE_READONLY)
+        file_drop_target = ValidationDropper(self)
+        self.SetDropTarget(file_drop_target)
+        self.Show()
+
+
+class ValidationDropper(wx.FileDropTarget):
+    """File drop target class for receiving files for metadata validation."""
+
+    def __init__(self, window: MainWindow):
+        wx.FileDropTarget.__init__(self)
+        self.window = window
+
+    def OnDropFiles(self, x, y, filenames):
+        """Receives dropped files, and runs validation on them."""
+        for i in filenames:
+            track = Track(i)
+            self.window.text_box.write(f"{track.filename}: ")
+            if track.valid:
+                self.window.text_box.write("Valid\n")
+            else:
+                self.window.text_box.write("Invalid\n")
+
+            if track.errors:
+                self.window.text_box.write("Errors:\n")
+                for error in track.errors:
+                    self.window.text_box.write(f"    - {error}\n")
+
+            if track.warnings:
+                self.window.text_box.write("Warnings:\n")
+                for warning in track.warnings:
+                    self.window.text_box.write(f"    - {warning}\n")
+
+        self.window.text_box.write("\n")
+        return True
+
+
 if __name__ == "__main__":
-
-    while True:
-        input_file = input("File?")
-        input_file = input_file.strip("\"'")
-
-        track = Track(input_file)
-
-        print("Errors: ", track.errors)
-        print("Warnings: ", track.warnings)
-        print("Valid: ", track.valid)
+    app = wx.App()
+    frame = MainWindow(None, "id3validator")
+    app.MainLoop()
