@@ -52,6 +52,8 @@ ALL_CATEGORIES = (
 
 ALL_GENRE_ITEMS = ("cancon", "local")
 
+ALLOWED_EXTENSIONS = ("mp3", "ogg", "m4a")
+
 
 @dataclass
 class TrackType:
@@ -374,22 +376,22 @@ class ValidationDropper(wx.FileDropTarget):
         """Receives dropped files, and runs validation on them."""
         self.window.text_box.SetValue("")
         for i in filenames:
-            # create track object
-            track = Track(i)
+            if i.split(".")[-1].lower() in ALLOWED_EXTENSIONS:
+                # create track object
+                track = Track(i)
 
-            # check if track already exists in list
-            indices = [
-                i for i, s in enumerate(self.window.list.GetObjects()) if track == s
-            ]
-            if len(indices) > 0:  # if it does, reload metadata
-                existing_track = self.window.list.GetObjectAt(indices[0])
-                existing_track.refresh()
-                self.window.list.RefreshObject(existing_track)
-            else:  # if not, append to list
-                self.window.list.AddObject(track)
-
-            self.window.text_box.write(track.summary())
-            self.window.text_box.write("\n")
+                # check if track already exists in list
+                indices = [
+                    i for i, s in enumerate(self.window.list.GetObjects()) if track == s
+                ]
+                if len(indices) > 0:  # if it does, reload metadata
+                    existing_track = self.window.list.GetObjectAt(indices[0])
+                    existing_track.refresh()
+                    self.window.list.RefreshObject(existing_track)
+                else:  # if not, append to list
+                    self.window.list.AddObject(track)
+                self.window.text_box.write(track.summary())
+                self.window.text_box.write("\n")
         return True
 
 
