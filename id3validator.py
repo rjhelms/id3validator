@@ -391,8 +391,14 @@ class MainWindow(wx.Frame):
             style=wx.RA_SPECIFY_COLS,
         )
 
+        self.clear_button = wx.Button(self, wx.ID_ANY, "Clear")
+
+        left_sizer = wx.BoxSizer(wx.VERTICAL)
+        left_sizer.Add(self.radio_box, 1, wx.EXPAND, 0)
+        left_sizer.Add(self.clear_button, 0, wx.EXPAND, 0)
+
         top_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        top_sizer.Add(self.radio_box, 0, wx.EXPAND, 0)
+        top_sizer.Add(left_sizer, 0, wx.EXPAND, 0)
         top_sizer.Add(self.list, 1, wx.EXPAND, 0)
 
         self.text_box = wx.TextCtrl(
@@ -413,6 +419,7 @@ class MainWindow(wx.Frame):
         self.Bind(wx.EVT_TIMER, self.on_timer_up, id=wx.ID_ANY)
         self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.on_item_selected, id=wx.ID_ANY)
         self.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.on_item_selected, id=wx.ID_ANY)
+        self.Bind(wx.EVT_BUTTON, self.on_clear, source=self.clear_button, id=wx.ID_ANY)
         self.Show()
 
     def on_item_selected(self, event):
@@ -428,6 +435,10 @@ class MainWindow(wx.Frame):
             results_text += track.summary()
             results_text += "\n"
         self.text_box.SetValue(results_text)
+
+    def on_clear(self, event):
+        """Clear all currently loaded tracks."""
+        self.list.DeleteAllItems()
 
 
 class ValidationDropper(wx.FileDropTarget):
