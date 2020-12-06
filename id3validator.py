@@ -264,11 +264,11 @@ class Track:
         Returns a string representation of the validation results, for logging or UI display.
         """
         summary = ""
-        summary += f"{self.filename}: "
+        summary += f"{self.filename}:\n"
         if self.valid:
             summary += "Valid\n"
         else:
-            summary += "Invalid\n"
+            summary += "Invalid, "
 
         if self.errors:
             summary += "Errors:\n"
@@ -423,10 +423,11 @@ class MainWindow(wx.Frame):
 
     def on_timer_up(self, event):
         """Process change in selection events, after end of one-shot timer."""
-        self.text_box.SetValue("")
-        for item in self.list.GetSelectedObjects():
-            self.text_box.write(item.summary())
-            self.text_box.write("\n")
+        results_text = ""
+        for track in self.list.GetSelectedObjects():
+            results_text += track.summary()
+            results_text += "\n"
+        self.text_box.SetValue(results_text)
 
 
 class ValidationDropper(wx.FileDropTarget):
@@ -438,8 +439,8 @@ class ValidationDropper(wx.FileDropTarget):
 
     def OnDropFiles(self, x, y, filenames):
         """Receives dropped files, and runs validation on them."""
-        self.window.text_box.SetValue("")
         insert_track_type = TRACK_TYPES[self.window.radio_box.GetSelection()]
+        results_text = ""
         for i in filenames:
             if i.split(".")[-1].lower() in ALLOWED_EXTENSIONS:
                 # create track object
@@ -459,8 +460,9 @@ class ValidationDropper(wx.FileDropTarget):
                     self.window.list.RefreshObject(existing_track)
                 else:  # if not, append to list
                     self.window.list.AddObject(track)
-                self.window.text_box.write(track.summary())
-                self.window.text_box.write("\n")
+                results_text += track.summary()
+                results_text += "\n"
+        self.window.text_box.SetValue(results_text)
         return True
 
 
