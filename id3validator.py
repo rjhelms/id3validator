@@ -79,8 +79,54 @@ class TrackType:
     artist_mandatory: bool = False
     album_mandatory: bool = False
 
+    def __str__(self):
+        return self.name
+
 
 DEFAULT_TYPE = TrackType("Default")
+
+TRACK_TYPES = (
+    # DEFAULT_TYPE,
+    TrackType(
+        "Music",
+        (
+            21,
+            22,
+            23,
+            24,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+        ),
+        ALL_GENRE_ITEMS,
+        True,
+        True,
+    ),
+    TrackType(
+        "Prerecorded",
+        (
+            11,
+            12,
+            21,
+            22,
+            23,
+            24,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+        ),
+        (),
+        True,
+        True,
+    ),
+    TrackType("Station ID", (43,), (), False, False),
+)
 
 
 class Track:
@@ -314,7 +360,6 @@ class MainWindow(wx.Frame):
 
     def __init__(self, parent, title):
         wx.Frame.__init__(self, parent, title=title, size=(640, 480))
-        sizer = wx.BoxSizer(wx.VERTICAL)
 
         self.list = ObjectListView.ObjectListView(self, style=wx.LC_REPORT)
         self.list.SetColumns(
@@ -324,20 +369,39 @@ class MainWindow(wx.Frame):
                 ),
                 ObjectListView.ColumnDefn("E", "left", 24, "error_count"),
                 ObjectListView.ColumnDefn("W", "left", 24, "warning_count"),
-                ObjectListView.ColumnDefn("Title", "left", -1, "title"),
-                ObjectListView.ColumnDefn("Artist", "left", -1, "artist"),
-                ObjectListView.ColumnDefn("Album", "left", -1, "album"),
-                ObjectListView.ColumnDefn("Date", "left", -1, "date"),
+                ObjectListView.ColumnDefn("Type", "left", 96, "type"),
+                ObjectListView.ColumnDefn("Title", "left", 96, "title"),
+                ObjectListView.ColumnDefn("Artist", "left", 96, "artist"),
+                ObjectListView.ColumnDefn("Album", "left", 96, "album"),
+                ObjectListView.ColumnDefn("Date", "left", 48, "date"),
                 ObjectListView.ColumnDefn("Filename", "left", -1, "filename"),
             ]
         )
+
+        radio_box_choices = []
+        for track_type in TRACK_TYPES:
+            radio_box_choices.append(track_type.name)
+
+        self.radio_box = wx.RadioBox(
+            self,
+            wx.ID_ANY,
+            "Track type",
+            choices=radio_box_choices,
+            majorDimension=1,
+            style=wx.RA_SPECIFY_COLS,
+        )
+
+        top_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        top_sizer.Add(self.radio_box, 0, wx.EXPAND, 0)
+        top_sizer.Add(self.list, 1, wx.EXPAND, 0)
 
         self.text_box = wx.TextCtrl(
             self, style=wx.TE_MULTILINE | wx.TE_READONLY, size=(-1, 150)
         )
         self.text_box.SetMinSize(wx.Size(-1, 150))
 
-        sizer.Add(self.list, 3, wx.EXPAND, 0)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(top_sizer, 3, wx.EXPAND, 0)
         sizer.Add(self.text_box, 1, wx.EXPAND, 0)
         self.SetSizer(sizer)
 
@@ -375,10 +439,11 @@ class ValidationDropper(wx.FileDropTarget):
     def OnDropFiles(self, x, y, filenames):
         """Receives dropped files, and runs validation on them."""
         self.window.text_box.SetValue("")
+        insert_track_type = TRACK_TYPES[self.window.radio_box.GetSelection()]
         for i in filenames:
             if i.split(".")[-1].lower() in ALLOWED_EXTENSIONS:
                 # create track object
-                track = Track(i)
+                track = Track(i, insert_track_type)
 
                 # check if track already exists in list
                 indices = [
@@ -386,6 +451,10 @@ class ValidationDropper(wx.FileDropTarget):
                 ]
                 if len(indices) > 0:  # if it does, reload metadata
                     existing_track = self.window.list.GetObjectAt(indices[0])
+
+                    # update type to current selection
+                    existing_track.type = insert_track_type
+
                     existing_track.refresh()
                     self.window.list.RefreshObject(existing_track)
                 else:  # if not, append to list
