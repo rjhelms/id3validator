@@ -4,6 +4,7 @@
 from dataclasses import dataclass
 from enum import Enum
 from typing import List, Tuple
+from os import path, walk
 
 import mutagen
 import wx
@@ -448,31 +449,43 @@ class ValidationDropper(wx.FileDropTarget):
         wx.FileDropTarget.__init__(self)
         self.window = window
 
+    def __import_file(self, insert_track_type: TrackType, filename: str) -> str:
+        results_text = ""
+        if filename.split(".")[-1].lower() in ALLOWED_EXTENSIONS:
+            # create track object
+            track = Track(filename, insert_track_type)
+
+            # check if track already exists in list
+            indices = [
+                i for i, s in enumerate(self.window.list.GetObjects()) if track == s
+            ]
+            if len(indices) > 0:  # if it does, reload metadata
+                existing_track = self.window.list.GetObjectAt(indices[0])
+
+                # update type to current selection
+                existing_track.type = insert_track_type
+
+                existing_track.refresh()
+                self.window.list.RefreshObject(existing_track)
+            else:  # if not, append to list
+                self.window.list.AddObject(track)
+            results_text = track.summary()
+            results_text += "\n"
+        return results_text
+
     def OnDropFiles(self, x, y, filenames):
         """Receives dropped files, and runs validation on them."""
         insert_track_type = TRACK_TYPES[self.window.radio_box.GetSelection()]
         results_text = ""
         for i in filenames:
-            if i.split(".")[-1].lower() in ALLOWED_EXTENSIONS:
-                # create track object
-                track = Track(i, insert_track_type)
-
-                # check if track already exists in list
-                indices = [
-                    i for i, s in enumerate(self.window.list.GetObjects()) if track == s
-                ]
-                if len(indices) > 0:  # if it does, reload metadata
-                    existing_track = self.window.list.GetObjectAt(indices[0])
-
-                    # update type to current selection
-                    existing_track.type = insert_track_type
-
-                    existing_track.refresh()
-                    self.window.list.RefreshObject(existing_track)
-                else:  # if not, append to list
-                    self.window.list.AddObject(track)
-                results_text += track.summary()
-                results_text += "\n"
+            if path.isfile(i):
+                results_text += self.__import_file(insert_track_type, i)
+            elif path.isdir(i):
+                for root, dirs, files in walk(i):
+                    for name in files:
+                        results_text += self.__import_file(
+                            insert_track_type, path.join(root, name)
+                        )
         self.window.text_box.SetValue(results_text)
         return True
 
