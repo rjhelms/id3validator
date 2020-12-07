@@ -392,6 +392,10 @@ class MainWindow(wx.Frame):
             style=wx.RA_SPECIFY_COLS,
         )
 
+        self.radio_box.SetBackgroundColour(
+            wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOW)
+        )
+
         self.clear_button = wx.Button(self, wx.ID_ANY, "Clear")
 
         left_sizer = wx.BoxSizer(wx.VERTICAL)
