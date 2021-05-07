@@ -51,9 +51,13 @@ ALL_CATEGORIES = (
     53,
 )
 
-ALL_GENRE_ITEMS = ("cancon", "local")
+# validate seasons somehow?
 
-ALLOWED_EXTENSIONS = ("mp3", "ogg", "m4a")
+ALL_GENRE_ITEMS = ("CAN", "LOC", "IDG", "HIT", "INS", "NGT")
+
+# read wmas?
+
+ALLOWED_EXTENSIONS = ("mp3", "ogg", "m4a", "wma")
 
 
 @dataclass
@@ -68,6 +72,8 @@ class TrackType:
         Valid CRTC content categories for the track type, defaults to all valid CRTC categories.
     valid_genre_items: optional
         Other entries that are valid to appear in the "genre" tag. Defaulst to ALL_GENRE_ITEMS
+    title_mandatory: optional
+        Whether the title field is mandatory for this track type, defaults to False
     artist_mandatory: optional
         Whether the artist field is mandatory for this track type, defaults to False
     album_mandatory: optional
@@ -77,6 +83,7 @@ class TrackType:
     name: str
     valid_categories: Tuple[int] = ALL_CATEGORIES
     valid_genre_items: Tuple[str] = ALL_GENRE_ITEMS
+    title_mandatory: bool = False
     artist_mandatory: bool = False
     album_mandatory: bool = False
 
@@ -105,9 +112,53 @@ TRACK_TYPES = (
         ALL_GENRE_ITEMS,
         True,
         True,
+        True,
     ),
     TrackType(
-        "Prerecorded",
+        "Community PSA",
+        (
+            11,
+            12,
+        ),
+        (),
+        False,
+        False,
+        False,
+    ),
+    TrackType(
+        "Trent Radio PSA",
+        (
+            11,
+            12,
+        ),
+        (),
+        False,
+        False,
+        False,
+    ),
+    TrackType("Station ID", (43,), (), False, False, False),
+    TrackType(
+        "Traffic / Sponsorship",
+        (
+            51,
+            52,
+            53,
+        ),
+        (),
+        False,
+        False,
+        False,
+    ),
+    TrackType(
+        "Ambient / Filler",
+        ALL_CATEGORIES,
+        ALL_GENRE_ITEMS,
+        True,
+        True,
+        True,
+    ),
+    TrackType(
+        "Current Programme",
         (
             11,
             12,
@@ -122,11 +173,62 @@ TRACK_TYPES = (
             35,
             36,
         ),
-        (),
+        ("CAN", "LOC", "IDG", "NGT"),
+        True,
         True,
         True,
     ),
-    TrackType("Station ID", (43,), (), False, False),
+    TrackType(
+        "Archive Programme",
+        (
+            11,
+            12,
+            21,
+            22,
+            23,
+            24,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+        ),
+        ("CAN", "LOC", "IDG", "NGT"),
+        True,
+        True,
+        True,
+    ),
+    TrackType(
+        "News",
+        (
+            11,
+            12,
+        ),
+        (),
+        False,
+        False,
+        False,
+    ),
+    TrackType(
+        "Programme Promo",
+        (
+            45,
+            45,
+        ),
+        (),
+        False,
+        False,
+        False,
+    ),
+    TrackType(
+        "Continuity",
+        ALL_CATEGORIES,
+        (),
+        False,
+        False,
+        False,
+    ),
 )
 
 
@@ -192,7 +294,7 @@ class Track:
             # verify other genre items are acceptable
             for i, item in enumerate(genres):
                 if i is not category_index:
-                    if item not in self.type.valid_genre_items:
+                    if item.strip(',') not in self.type.valid_genre_items:
                         self.__errors.append(
                             f"{ValidationMessages.INVALID_GENRE.value}: {item}"
                         )
@@ -205,7 +307,7 @@ class Track:
         return genre_valid
 
     def refresh(self) -> None:
-        """Clears any existing validation, and reloads metadat from file."""
+        """Clears any existing validation, and reloads metadata from file."""
         self.__valid = False
         self.__validated = False
         self.__errors = []
@@ -233,8 +335,11 @@ class Track:
         valid_check = True
 
         if "title" not in self.metadata:
-            self.__errors.append(ValidationMessages.MISSING_TITLE.value)
-            valid_check = False
+            if self.type.title_mandatory:
+                self.__errors.append(ValidationMessages.MISSING_TITLE.value)
+                valid_check = False
+            else:
+                self.__warnings.append(ValidationMessages().MISSING_TITLE.value)
 
         if "album" not in self.metadata:
             if self.type.album_mandatory:
